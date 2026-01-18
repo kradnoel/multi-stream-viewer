@@ -1,0 +1,51 @@
+{
+    "productName": "{{package.name}}",
+    "version": "0.1.0",
+    "identifier": "com.kradnoel.{{package.name}}",
+    "build": {
+        "beforeDevCommand": "bun run dev",
+        "beforeBuildCommand": "bun run build",
+        "devUrl": "http://localhost:3000",
+        "frontendDist": "../dist",
+        "removeUnusedCommands": true
+    },
+    "app": {
+        "security": {
+        "csp": null
+        },
+        "windows": [
+            {
+                "title": "Multi Stream Viewer",
+                "fullscreen": false,
+                "resizable": true,
+                "width": 1280,
+                "height": 720,
+                "minWidth": 800,
+                "minHeight": 600,
+                "maxWidth": 3840,
+                "maxHeight": 2160,
+                "center": true,
+                "decorations": true,
+                "transparent": false
+            }
+        ]
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+        "../assets/icons/32x32.png",
+        "../assets/icons/128x128.png",
+        "../assets/icons/128x128@2x.png",
+        "../assets/icons/icon.icns",
+        "../assets/icons/icon.ico"
+        ],
+        "publisher": "Kradnoel",
+        "copyright": "Copyright © 2026 Kradnoel"
+    },
+    "plugins": {
+        "updater": {
+            "active": false
+        }
+    }
+}

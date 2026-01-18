@@ -1,0 +1,33 @@
+{
+    "name": "multi-stream-viewer",
+    "version": "0.1.0",
+    "description": "Multi-platform desktop app for watching multiple live streams simultaneously.",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "tauri": "tauri",
+        "tauri:dev": "bun tauri dev",
+        "tauri:build": "bun tauri build"
+    },
+    "dependencies": {
+        "vue": "^3.4.0",
+        "@tauri-apps/plugin-dialog": "^2.6.0",
+        "@tauri-apps/plugin-process": "^2.3.1",
+        "@tauri-apps/api": "^2.9.1",
+        "alpinejs": "^3.13.0",
+        "localforage": "^1.10.0"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "^2.9.5",
+        "@types/alpinejs": "^3.13.11",
+        "@types/localforage": "^0.0.33",
+        "@vitejs/plugin-vue": "^5.0.0",
+        "bun-types": "latest",
+        "sass": "^1.97.2",
+        "typescript": "^5.9.3",
+        "vite": "^5.0.0"
+    }
+}

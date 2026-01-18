@@ -1,0 +1,16 @@
+:root {
+  // Light mode (default)
+  --bg-primary: #{$light-bg};
+  --bg-secondary: #{$light-bg-secondary};
+  --text-primary: #{$light-text};
+  --text-secondary: #{$light-text-secondary};
+  --border-color: #{$light-border};
+}
+
+[data-theme="dark"] {
+  --bg-primary: #{$dark-bg};
+  --bg-secondary: #{$dark-bg-secondary};
+  --text-primary: #{$dark-text};
+  --text-secondary: #{$dark-text-secondary};
+  --border-color: #{$dark-border};
+}

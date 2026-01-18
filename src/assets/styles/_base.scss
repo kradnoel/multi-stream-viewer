@@ -1,0 +1,24 @@
+@use 'sass:color';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  //font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: $font-sans;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background $transition-fast, color $transition-fast;
+}
+
+a {
+  color: $primary;
+  text-decoration: none;
+
+  &:hover {
+    color: color.adjust($danger, $lightness: -10%);
+  }
+}

@@ -1,0 +1,37 @@
+# --- Rust / Cargo ---
+/target/
+**/*.rs.bk
+*.pdb
+
+# --- Bun / Node ---
+node_modules/
+bun.lockb
+*.log
+# If using Bun's native bundler
+dist/
+out/
+.bun-build/
+
+# --- Environment / Secrets ---
+.env
+.env*.local
+.env.test
+.env.production
+.env.development
+
+# --- IDEs / Editors ---
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# Rust tauri
+src-tauri/target
