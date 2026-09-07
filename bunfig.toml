@@ -2,7 +2,8 @@
 # Without this mapping Bun looks the scope up on npmjs.org and the install fails
 # with a misleading "package not found".
 #
-# Authentication, if the registry requires it, comes from MUDIX_NPM_TOKEN in the
-# environment. Never commit the token itself; CI reads it from a secret.
+# Credentials are NOT kept here. Bun reads them from ~/.npmrc:
+#   //npmhub.mudix.co.mz/:_authToken=...
+# CI writes the same line from a secret before installing.
 [install.scopes]
-"@mudix-mz" = { url = "https://npmhub.mudix.co.mz/", token = "$MUDIX_NPM_TOKEN" }
+"@mudix-mz" = { url = "https://npmhub.mudix.co.mz/" }
