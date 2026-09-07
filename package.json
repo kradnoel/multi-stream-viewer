@@ -8,6 +8,7 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
+        "typecheck": "vue-tsc --noEmit",
         "tauri": "tauri",
         "tauri:dev": "bun tauri dev",
         "tauri:build": "bun tauri build"
@@ -28,6 +29,7 @@
         "bun-types": "latest",
         "sass": "^1.97.2",
         "typescript": "^5.9.3",
+        "vue-tsc": "^2.1.10",
         "vite": "^5.0.0"
     }
 }
