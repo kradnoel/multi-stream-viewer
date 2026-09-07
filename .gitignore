@@ -35,3 +35,5 @@ Thumbs.db
 
 # Rust tauri
 src-tauri/target
+# Tauri generates these on every build
+src-tauri/gen/schemas/
