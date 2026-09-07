@@ -1,8 +1,24 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager,
 };
+
+/// Whether the frontend has attached its listener for `show-exit-dialog`.
+///
+/// Until it has, a close request must be allowed through: preventing a close
+/// that nothing can answer leaves the window impossible to shut, because the
+/// dialog that would offer to quit never appears.
+struct CloseHandlerReady(AtomicBool);
+
+/// Called by the exit dialog once it is listening. Only after this does a close
+/// request get intercepted on Windows and Linux.
+#[tauri::command]
+fn close_handler_ready(state: tauri::State<'_, CloseHandlerReady>) {
+    state.0.store(true, Ordering::Relaxed);
+}
 
 /// Shows the main window and gives it focus.
 ///
@@ -58,15 +74,27 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Intercepts a close request instead of letting the window be destroyed.
+/// Decides what a close request does.
 ///
-/// macOS keeps the process alive and hides the window, which is the platform
-/// convention; the tray is what brings it back. Everywhere else the frontend is
-/// asked to confirm, and it calls `exit` if the user agrees.
-fn handle_close_requested(window: &tauri::Window) {
+/// macOS hides the window and keeps the process alive, which is the platform
+/// convention and needs nothing from the frontend; the tray brings it back.
+/// Everywhere else the frontend is asked to confirm — but only if it is
+/// listening, so a failed subscription degrades to an ordinary close rather
+/// than to a window that cannot be shut.
+fn handle_close_requested(window: &tauri::Window, api: &tauri::CloseRequestApi) {
     if cfg!(target_os = "macos") {
+        api.prevent_close();
         let _ = window.hide();
-    } else {
+        return;
+    }
+
+    let ready = window
+        .state::<CloseHandlerReady>()
+        .0
+        .load(Ordering::Relaxed);
+
+    if ready {
+        api.prevent_close();
         let _ = window.emit("show-exit-dialog", ());
     }
 }
@@ -76,14 +104,15 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
+        .manage(CloseHandlerReady(AtomicBool::new(false)))
+        .invoke_handler(tauri::generate_handler![close_handler_ready])
         .setup(|app| {
             setup_tray(app.handle())?;
             Ok(())
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                handle_close_requested(window);
+                handle_close_requested(window, api);
             }
         })
         .run(tauri::generate_context!())

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { invoke } from '@tauri-apps/api/core'
 import { exit } from '@tauri-apps/plugin-process'
 
 const isOpen = ref(false)
@@ -8,12 +9,21 @@ const isOpen = ref(false)
 /** Disposes of the window-event subscription when the component goes away. */
 let unlisten: UnlistenFn | undefined
 
-// The Rust side prevents the window from closing and emits this instead, so the
-// dialog is the only thing that can end the process on Windows and Linux.
+// The Rust side prevents the window from closing and emits this instead, so on
+// Windows and Linux this dialog is the only thing that can end the process.
+//
+// It only starts intercepting closes once told this listener exists. If the
+// subscription fails the flag stays unset, and a close behaves normally rather
+// than being blocked by a prompt that can never appear.
 onMounted(async () => {
-  unlisten = await listen('show-exit-dialog', () => {
-    isOpen.value = true
-  })
+  try {
+    unlisten = await listen('show-exit-dialog', () => {
+      isOpen.value = true
+    })
+    await invoke('close_handler_ready')
+  } catch (error) {
+    console.error('Exit dialog could not attach its listener; closing the window will not prompt.', error)
+  }
 })
 
 onUnmounted(() => {
@@ -22,7 +32,12 @@ onUnmounted(() => {
 
 /** Terminates the application. The window was never allowed to close on its own. */
 const handleExit = async (): Promise<void> => {
-  await exit(0)
+  try {
+    await exit(0)
+  } catch (error) {
+    console.error('Could not exit.', error)
+    isOpen.value = false
+  }
 }
 
 /** Dismisses the dialog and leaves the window open. */
