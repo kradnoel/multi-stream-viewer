@@ -24,10 +24,11 @@
     "devDependencies": {
         "@tauri-apps/cli": "^2.9.5",
         "@vitejs/plugin-vue": "^5.0.0",
+        "@vue/tsconfig": "^0.9.1",
         "bun-types": "latest",
         "sass": "^1.97.2",
         "typescript": "^5.9.3",
-        "vue-tsc": "^2.1.10",
-        "vite": "^5.0.0"
+        "vite": "^5.0.0",
+        "vue-tsc": "^3.3.11"
     }
 }
