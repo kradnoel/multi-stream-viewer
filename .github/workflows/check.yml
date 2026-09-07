@@ -1,0 +1,56 @@
+name: check
+
+# Runs on all three targets from the start. The three webviews are where this
+# app's defects live, so a change verified on one platform is not verified.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # vue-tsc's Volar layer does not register .vue under Bun, so the type
+      # check runs under Node. Bun stays the package manager and app runtime.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libgtk-3-dev libxdo-dev libssl-dev
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build frontend
+        run: bun run build
+
+      # Must follow the frontend build: generate_context! panics if
+      # frontendDist does not exist yet.
+      - name: Check Rust
+        run: cargo check --manifest-path src-tauri/Cargo.toml
