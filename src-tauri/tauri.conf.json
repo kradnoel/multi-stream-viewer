@@ -1,7 +1,7 @@
 {
-    "productName": "{{package.name}}",
+    "productName": "MultiStream",
     "version": "0.1.0",
-    "identifier": "com.kradnoel.{{package.name}}",
+    "identifier": "com.kradnoel.multistreamviewer",
     "build": {
         "beforeDevCommand": "bun run dev",
         "beforeBuildCommand": "bun run build",
@@ -11,7 +11,7 @@
     },
     "app": {
         "security": {
-        "csp": null
+            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost ws://localhost:3000 ws://localhost:1421"
         },
         "windows": [
             {

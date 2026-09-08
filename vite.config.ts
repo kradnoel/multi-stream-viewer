@@ -28,6 +28,12 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_ENV_DEBUG
   },
   plugins: [vue()],
+  css: {
+    preprocessorOptions: {
+      // Silences the legacy JS API deprecation; Dart Sass 2.0 removes it.
+      scss: { api: 'modern-compiler' },
+    },
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

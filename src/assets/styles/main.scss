@@ -1,5 +1,5 @@
-@import "fonts";
-@import 'variables';
-@import 'themes';
-@import 'base';
-@import 'buttons';
+// Carbonless owns colour, type and component styling. What is left here is the
+// document reset and the IBM Plex faces the kit asks for but does not ship.
+// @use, not @import: Dart Sass removes @import in 3.0.
+@use 'fonts';
+@use 'base';

@@ -1,26 +1,47 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { listen  } from '@tauri-apps/api/event'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { invoke } from '@tauri-apps/api/core'
 import { exit } from '@tauri-apps/plugin-process'
-const isOpen = ref(false)
-//const dontAskAgain = ref(false)
-let unlisten
 
+const isOpen = ref(false)
+
+/** Disposes of the window-event subscription when the component goes away. */
+let unlisten: UnlistenFn | undefined
+
+// The Rust side prevents the window from closing and emits this instead, so on
+// Windows and Linux this dialog is the only thing that can end the process.
+//
+// It only starts intercepting closes once told this listener exists. If the
+// subscription fails the flag stays unset, and a close behaves normally rather
+// than being blocked by a prompt that can never appear.
 onMounted(async () => {
-  unlisten = await listen('show-exit-dialog', () => {
-    isOpen.value = true
-  })
+  try {
+    unlisten = await listen('show-exit-dialog', () => {
+      isOpen.value = true
+    })
+    await invoke('close_handler_ready')
+  } catch (error) {
+    console.error('Exit dialog could not attach its listener; closing the window will not prompt.', error)
+  }
 })
 
 onUnmounted(() => {
   if (unlisten) unlisten()
 })
 
-const handleExit = async () => {
-  await exit(0)
+/** Terminates the application. The window was never allowed to close on its own. */
+const handleExit = async (): Promise<void> => {
+  try {
+    await exit(0)
+  } catch (error) {
+    console.error('Could not exit.', error)
+    isOpen.value = false
+  }
 }
 
-const handleCancel = () => {
+/** Dismisses the dialog and leaves the window open. */
+const handleCancel = (): void => {
   isOpen.value = false
 }
 </script>
@@ -53,18 +74,21 @@ const handleCancel = () => {
 </template>
 
 <style scoped>
+/* Colours come from the carbonless token set so the dialog follows the theme
+   instead of carrying its own palette. Danger has no token in the kit, so the
+   one destructive colour is declared here for both schemes. */
 .dialog-overlay {
+  --danger: #da1e28;
+  --danger-hover: #b81922;
+
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: fadeIn 0.30s ease forwards;
+  animation: fadeIn 0.3s ease forwards;
 }
 
 @keyframes fadeIn {
@@ -74,13 +98,13 @@ const handleCancel = () => {
 }
 
 .dialog {
-  background: #1e1e1e;
-  border-radius: 8px;
+  background: var(--p-surface-0);
+  color: var(--p-surface-900);
   min-width: 350px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   transform: scale(0.95);
   opacity: 0;
-  animation: scaleIn 0.30s ease forwards;
+  animation: scaleIn 0.3s ease forwards;
 }
 
 @keyframes scaleIn {
@@ -95,19 +119,19 @@ const handleCancel = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--p-surface-200);
 }
 
 .dialog-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #fff;
+  font-weight: 600;
 }
 
 .icon {
-  background: #0078d4;
-  color: white;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -119,11 +143,11 @@ const handleCancel = () => {
 
 .dialog-body {
   padding: 20px 16px;
-  color: #ccc;
+  color: var(--p-surface-700);
 }
 
 .dialog-body p {
-  margin: 0 0 16px 0;
+  margin: 0;
 }
 
 .dialog-footer {
@@ -131,19 +155,53 @@ const handleCancel = () => {
   justify-content: flex-end;
   gap: 10px;
   padding: 12px 16px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--p-surface-200);
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  color: #888;
+  color: var(--p-surface-500);
   font-size: 20px;
   cursor: pointer;
+  line-height: 1;
 }
 
 .close-btn:hover {
+  color: var(--p-surface-900);
+}
+
+/* 32px to match the kit's button height. */
+.btn {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+}
+
+.btn-danger {
+  background: var(--danger);
   color: #fff;
 }
 
+.btn-danger:hover {
+  background: var(--danger-hover);
+}
+
+.btn-light {
+  background: transparent;
+  color: var(--p-surface-900);
+  border-color: var(--p-surface-400);
+}
+
+.btn-light:hover {
+  background: var(--p-surface-100);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay,
+  .dialog {
+    animation-duration: 0.01ms;
+  }
+}
 </style>
