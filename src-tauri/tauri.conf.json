@@ -11,7 +11,7 @@
     },
     "app": {
         "security": {
-            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost ws://localhost:3000 ws://localhost:1421"
+            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob: https:; frame-src https://player.twitch.tv https://www.youtube-nocookie.com https://www.youtube.com; connect-src 'self' ipc: http://ipc.localhost ws://localhost:3000 ws://localhost:1421 https:"
         },
         "windows": [
             {

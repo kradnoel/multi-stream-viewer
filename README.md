@@ -4,9 +4,14 @@ A desktop app for watching several live streams at once: paste in a Twitch,
 YouTube Live or direct HLS URL, arrange the panes, hear the one you want, and
 reopen the same set tomorrow.
 
-**Status: pre-0.1.0.** The window, tray and exit dialog work. Nothing plays yet —
-there is no video pane, no grid and no saved state. See the ship plan for what
-lands when.
+**Status: one pane plays.** The window, tray and exit dialog work, and a single
+pane plays one Twitch channel, YouTube video or direct `.m3u8` URL. There is no
+grid and no saved state yet, so the app holds one stream at a time.
+
+Twitch and YouTube are embedded in each service's own player; a direct manifest
+is played in a `<video>` element, via [hls.js](https://github.com/video-dev/hls.js)
+on the Windows and Linux webviews and natively on macOS. Panes start muted,
+because a browser blocks autoplay that is not.
 
 ## Prerequisites
 
