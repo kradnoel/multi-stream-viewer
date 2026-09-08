@@ -3,6 +3,7 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 import type { ParsedStream } from '../lib/streams'
 
 const props = defineProps<{ stream: ParsedStream }>()
+const emit = defineEmits<{ close: [] }>()
 
 const video = ref<HTMLVideoElement | null>(null)
 const error = ref<string | null>(null)
@@ -92,6 +93,7 @@ onBeforeUnmount(teardown)
     <header class="pane-header">
       <span class="pane-kind">{{ stream.kind }}</span>
       <span class="pane-id">{{ stream.id }}</span>
+      <button class="pane-close" type="button" aria-label="Close pane" @click="emit('close')">×</button>
     </header>
 
     <div class="pane-body">
@@ -146,12 +148,27 @@ onBeforeUnmount(teardown)
 }
 
 .pane-id {
+  flex: 1;
   color: var(--p-surface-600);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.pane-close {
+  padding: 0 4px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--p-surface-500);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pane-close:hover {
+  color: var(--p-surface-900);
+}
 .pane-body {
   position: relative;
   flex: 1;
