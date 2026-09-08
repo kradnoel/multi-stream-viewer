@@ -20,13 +20,16 @@ lands when.
 ### Private registry
 
 The UI comes from `@mudix-mz/carbonless`, which resolves from
-`npmhub.mudix.co.mz` rather than npmjs.org. `bunfig.toml` maps the scope; you
-supply the credential:
+`npmhub.mudix.co.mz` rather than npmjs.org. `bunfig.toml` maps the scope to
+that registry; you supply the credential in `.npmrc`, which is gitignored:
 
 ```sh
-export MUDIX_NPM_TOKEN=...   # Windows: setx MUDIX_NPM_TOKEN ...
+echo "//npmhub.mudix.co.mz/:_authToken=$MUDIX_NPM_TOKEN" > .npmrc
 bun install
 ```
+
+A `~/.npmrc` with the same line works too, and covers every checkout on the
+machine. Bun reads both; the project file wins.
 
 **Without a token you cannot build from source.** Released binaries are
 unaffected — this only applies to building the app yourself.

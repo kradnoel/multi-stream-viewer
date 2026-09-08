@@ -41,6 +41,19 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
             librsvg2-dev patchelf libgtk-3-dev libxdo-dev libssl-dev
 
+      # @mudix-mz/carbonless comes from the private registry. bunfig.toml maps
+      # the scope; the credential has to be written here or the install 401s.
+      - name: Authenticate to the private registry
+        shell: bash
+        run: |
+          if [ -z "${MUDIX_NPM_TOKEN}" ]; then
+            echo "MUDIX_NPM_TOKEN secret is not set; the @mudix-mz install will 401." >&2
+            exit 1
+          fi
+          echo "//npmhub.mudix.co.mz/:_authToken=${MUDIX_NPM_TOKEN}" > .npmrc
+        env:
+          MUDIX_NPM_TOKEN: ${{ secrets.MUDIX_NPM_TOKEN }}
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 

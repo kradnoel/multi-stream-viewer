@@ -2,8 +2,10 @@
 # Without this mapping Bun looks the scope up on npmjs.org and the install fails
 # with a misleading "package not found".
 #
-# Credentials are NOT kept here. Bun reads them from ~/.npmrc:
+# The URL is mapped here; the credential is NOT. Bun reads the token from
+# .npmrc, which is gitignored:
 #   //npmhub.mudix.co.mz/:_authToken=...
-# CI writes the same line from a secret before installing.
+# A `token` key here would take precedence over .npmrc and, if it resolved to
+# nothing, would silently override a working credential with an empty one.
 [install.scopes]
 "@mudix-mz" = { url = "https://npmhub.mudix.co.mz/" }
