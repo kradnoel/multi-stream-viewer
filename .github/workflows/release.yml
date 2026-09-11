@@ -18,9 +18,11 @@ jobs:
       matrix:
         include:
           # Built for both architectures in one bundle so a single .dmg covers
-          # Apple silicon and Intel.
+          # Apple silicon and Intel. universal-apple-darwin is Tauri's name for
+          # "build both and lipo them", not a rustup target, so rustup installs
+          # the two real ones and only the bundler is told "universal".
           - os: macos-latest
-            target: universal-apple-darwin
+            target: aarch64-apple-darwin,x86_64-apple-darwin
             args: --target universal-apple-darwin
 
           # Pinned rather than ubuntu-latest: the AppImage links against the
