@@ -13,6 +13,22 @@ reopened later. There is no chat yet, and no rearranging panes by hand.
 It is not a recorder, clipper or restreamer, not a browser, not mobile, and not
 a moderation tool. Chat, when it arrives, will be read-only.
 
+## Window behaviour
+
+Closing does two different things, because the platforms mean different things
+by it:
+
+- **macOS** — the window hides and the process keeps running, which is the
+  platform convention. The tray icon brings it back; Quit in the tray menu ends
+  it. Streams keep playing while hidden.
+- **Windows and Linux** — a dialog asks whether to exit, and Exit ends the
+  process. If the frontend never attached its listener the dialog cannot appear,
+  so the close is allowed through rather than blocking a window nobody can shut.
+
+Launching a second time focuses the window that is already open instead of
+starting a rival process — two instances would be two grids writing over each
+other's presets. The window's position and size are restored on the next start.
+
 Twitch and YouTube are embedded in each service's own player; a direct manifest
 is played in a `<video>` element, via [hls.js](https://github.com/video-dev/hls.js)
 on the Windows and Linux webviews and natively on macOS. Panes start muted,
