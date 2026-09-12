@@ -3,9 +3,14 @@ name: release
 # Tag-driven: pushing v0.2.0 builds the bundles and attaches them to a draft
 # release. The tag is the trigger rather than a merge to main, so cutting a
 # release is a deliberate act and main can move on without shipping anything.
+#
+# Run by hand it builds the same bundles and publishes nothing, so a change to
+# this file can be tried without spending a version number on it. The macOS
+# job failed for v0.2.0 and there was no way to test the fix but to tag again.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 # tauri-action creates the release and uploads to it.
 permissions:
@@ -82,8 +87,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: bun tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: MultiStream ${{ github.ref_name }}
+          # Empty on a manual run, which is what tells tauri-action to build
+          # and stop. A release is only ever created from a tag.
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('MultiStream {0}', github.ref_name) || '' }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      # A manual run has nowhere to put the bundles, so they are kept on the run
+      # itself: downloadable for an hour of installing and watching a stream
+      # play, and gone before anyone mistakes one for a release.
+      - name: Keep the bundles on the run
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ matrix.os }}
+          # Two roots because the macOS job builds through lipo and the others
+          # do not. A job that produced nothing should say so rather than
+          # upload an empty archive and look like it worked.
+          path: |
+            src-tauri/target/release/bundle/**
+            src-tauri/target/universal-apple-darwin/release/bundle/**
+          if-no-files-found: error
+          retention-days: 7
