@@ -12,7 +12,8 @@
         "typecheck": "node scripts/typecheck.mjs",
         "tauri": "tauri",
         "tauri:dev": "bun tauri dev",
-        "tauri:build": "bun tauri build"
+        "tauri:build": "bun tauri build",
+        "test": "bun test"
     },
     "dependencies": {
         "@mudix-mz/carbonless": "^0.2.0",

@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import ExitDialog from './components/ExitDialog.vue'
 import StreamPane from './components/StreamPane.vue'
 import { parseStreamUrl, type ParsedStream } from './lib/streams'
+import {
+  emptyState,
+  loadState,
+  saveState,
+  withPreset,
+  withoutPreset,
+  type Preset,
+  type PresetState,
+} from './lib/presets'
 
 const input = ref('')
 const streams = ref<ParsedStream[]>([])
@@ -15,6 +24,81 @@ const error = ref<string | null>(null)
  * audible, and a single source of truth cannot express two.
  */
 const audible = ref<string | null>(null)
+
+const presetName = ref('')
+const presets = ref<PresetState>(emptyState())
+
+/**
+ * Reading can fail on purpose: presets written by a newer build are refused
+ * rather than guessed at, and the message says so. The app still opens, because
+ * unreadable presets are no reason to be unable to watch anything.
+ */
+onMounted(async () => {
+  try {
+    presets.value = await loadState()
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Saved presets could not be read.'
+  }
+})
+
+/**
+ * Writes first and shows second, so the list never claims something was saved
+ * that was not. A failed write leaves the app exactly as it was, plus a message.
+ */
+const persist = async (next: PresetState): Promise<boolean> => {
+  try {
+    await saveState(next)
+    presets.value = next
+    return true
+  } catch (cause) {
+    error.value =
+      cause instanceof Error
+        ? `Presets could not be saved: ${cause.message}`
+        : 'Presets could not be saved.'
+    console.error('Writing presets failed.', cause)
+    return false
+  }
+}
+
+const save = (): void => {
+  const name = presetName.value.trim()
+
+  if (!name) {
+    error.value = 'Name the preset before saving it.'
+    return
+  }
+  if (streams.value.length === 0) {
+    error.value = 'Add a stream before saving a preset.'
+    return
+  }
+
+  error.value = null
+
+  void persist(
+    withPreset(presets.value, {
+      name,
+      savedAt: new Date().toISOString(),
+      // Copied, so editing the grid afterwards does not rewrite what was saved.
+      streams: [...streams.value],
+    }),
+  ).then((written) => {
+    // The name stays in the box when the write failed, so nothing is retyped.
+    if (written) presetName.value = ''
+  })
+}
+
+/** Replaces the grid, rather than adding to it: a preset is a whole set. */
+const open = (preset: Preset): void => {
+  error.value = null
+  streams.value = [...preset.streams]
+  audible.value = preset.streams[0]?.src ?? null
+}
+
+const forget = (name: string): void => {
+  void persist(withoutPreset(presets.value, name))
+}
+
+const saved = computed(() => [...presets.value.presets].sort((a, b) => a.name.localeCompare(b.name)))
 
 const add = (): void => {
   const parsed = parseStreamUrl(input.value)
@@ -70,6 +154,33 @@ const columns = computed(() => Math.ceil(Math.sqrt(streams.value.length || 1)))
       />
       <button class="url-submit" type="submit">Add</button>
     </form>
+
+    <div class="presets">
+      <form class="preset-save" @submit.prevent="save">
+        <input
+          v-model="presetName"
+          class="preset-input"
+          type="text"
+          placeholder="Name this set"
+          aria-label="Preset name"
+        />
+        <button class="preset-submit" type="submit">Save</button>
+      </form>
+
+      <ul v-if="saved.length" class="preset-list">
+        <li v-for="preset in saved" :key="preset.name" class="preset">
+          <button class="preset-open" type="button" @click="open(preset)">{{ preset.name }}</button>
+          <button
+            class="preset-forget"
+            type="button"
+            :aria-label="`Forget ${preset.name}`"
+            @click="forget(preset.name)"
+          >
+            ×
+          </button>
+        </li>
+      </ul>
+    </div>
 
     <p v-if="error" class="url-error" role="alert">{{ error }}</p>
 
@@ -134,6 +245,90 @@ const columns = computed(() => Math.ceil(Math.sqrt(streams.value.length || 1)))
   background: var(--p-primary-color);
   border: 1px solid transparent;
   cursor: pointer;
+}
+
+.presets {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.preset-save {
+  display: flex;
+  gap: 6px;
+}
+
+.preset-input {
+  width: 180px;
+  height: 26px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--p-surface-900);
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-400);
+}
+
+.preset-input:focus {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: -2px;
+}
+
+.preset-submit {
+  height: 26px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--p-surface-700);
+  background: var(--p-surface-100);
+  border: 1px solid var(--p-surface-400);
+  cursor: pointer;
+}
+
+/* Saved sets are chips rather than a dropdown: with a handful of presets the
+   whole list is worth seeing, and opening one is then a single click. */
+.preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preset {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--p-surface-300);
+  background: var(--p-surface-0);
+}
+
+.preset-open {
+  padding: 0 8px;
+  height: 24px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--p-surface-800);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.preset-forget {
+  padding: 0 6px;
+  height: 24px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--p-surface-500);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.preset-forget:hover {
+  color: var(--p-surface-900);
 }
 
 .url-error {
