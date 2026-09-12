@@ -73,6 +73,20 @@ describe('the golden preset', () => {
   })
 })
 
+// JSON text is what actually goes into the store, because a structured clone
+// refuses the reactive proxies the app holds. So the text is what has to survive.
+describe('the stored form', () => {
+  test('a state written as JSON reads back identically', () => {
+    const state = withPreset(emptyState(), {
+      name: 'Friday night',
+      savedAt: '2026-09-12T20:00:00.000Z',
+      streams: [{ kind: 'hls', id: 'https://example.com/a.m3u8', src: 'https://example.com/a.m3u8' }],
+    })
+
+    expect(readState(JSON.parse(JSON.stringify(state)))).toEqual(state)
+  })
+})
+
 describe('editing the set', () => {
   test('saving a name twice replaces it instead of duplicating', () => {
     const first = withPreset(emptyState(), preset('Friday night'))

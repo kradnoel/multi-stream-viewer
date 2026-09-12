@@ -104,9 +104,28 @@ const store = localforage.createInstance({
 
 /** Reads the stored presets. Throws if the data is newer than this build. */
 export async function loadState(): Promise<PresetState> {
-  return readState(await store.getItem<unknown>(KEY))
+  const raw = await store.getItem<unknown>(KEY)
+
+  if (typeof raw !== 'string') return readState(raw)
+
+  try {
+    return readState(JSON.parse(raw))
+  } catch (cause) {
+    if (cause instanceof SyntaxError) {
+      throw new Error('Saved presets are unreadable: the stored data is not valid JSON.')
+    }
+    throw cause
+  }
 }
 
+/**
+ * Writes the presets as JSON text.
+ *
+ * Not as an object: the store clones what it is given, and a structured clone
+ * refuses the reactive proxies the app holds its state in — the write fails and
+ * the preset only looks saved. Text also makes the stored form the same shape
+ * as the golden fixture, so what ships is what the tests read.
+ */
 export async function saveState(state: PresetState): Promise<void> {
-  await store.setItem(KEY, state)
+  await store.setItem(KEY, JSON.stringify(state))
 }

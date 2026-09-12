@@ -41,13 +41,22 @@ onMounted(async () => {
   }
 })
 
-const persist = async (next: PresetState): Promise<void> => {
-  presets.value = next
+/**
+ * Writes first and shows second, so the list never claims something was saved
+ * that was not. A failed write leaves the app exactly as it was, plus a message.
+ */
+const persist = async (next: PresetState): Promise<boolean> => {
   try {
     await saveState(next)
+    presets.value = next
+    return true
   } catch (cause) {
-    error.value = 'Presets could not be saved.'
+    error.value =
+      cause instanceof Error
+        ? `Presets could not be saved: ${cause.message}`
+        : 'Presets could not be saved.'
     console.error('Writing presets failed.', cause)
+    return false
   }
 }
 
@@ -64,7 +73,7 @@ const save = (): void => {
   }
 
   error.value = null
-  presetName.value = ''
+
   void persist(
     withPreset(presets.value, {
       name,
@@ -72,7 +81,10 @@ const save = (): void => {
       // Copied, so editing the grid afterwards does not rewrite what was saved.
       streams: [...streams.value],
     }),
-  )
+  ).then((written) => {
+    // The name stays in the box when the write failed, so nothing is retyped.
+    if (written) presetName.value = ''
+  })
 }
 
 /** Replaces the grid, rather than adding to it: a preset is a whole set. */
