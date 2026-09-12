@@ -101,7 +101,20 @@ fn handle_close_requested(window: &tauri::Window, api: &tauri::CloseRequestApi) 
 
 /// Starts the application. This is the process's only Tauri builder.
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    // Registered before anything else, as the plugin requires: a second launch
+    // has to be folded into the first before that process builds a window of
+    // its own. Two instances would be two grids writing the same presets.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        show_main_window(app);
+    }));
+
+    builder
+        // Restores the window's last position and size, and writes them back as
+        // the app exits.
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .manage(CloseHandlerReady(AtomicBool::new(false)))
