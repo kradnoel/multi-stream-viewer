@@ -87,13 +87,14 @@ export function parseStreamUrl(input: string): ParsedStream | null {
     const channel = url.pathname.split('/').filter(Boolean)[0]
     if (!channel) return null
 
-    const parents = twitchParents().map((p) => `parent=${encodeURIComponent(p)}`).join('&')
-    // Muted so several panes can autoplay at once; the user unmutes the one
-    // they want to hear. Autoplay is blocked outright when it is not muted.
+    // The pane loads this app's own wrapper page rather than player.twitch.tv:
+    // the bare player cannot be muted from outside, and the wrapper runs the
+    // embed script that can. Parents are passed through for it to hand Twitch.
+    const parents = encodeURIComponent(twitchParents().join(','))
     return {
       kind: 'twitch',
       id: channel,
-      src: `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&${parents}&autoplay=true&muted=true`,
+      src: `twitch.html?channel=${encodeURIComponent(channel)}&parent=${parents}`,
     }
   }
 
@@ -101,10 +102,12 @@ export function parseStreamUrl(input: string): ParsedStream | null {
     const id = youtubeVideoId(url)
     if (!id) return null
 
+    // enablejsapi is what makes the player answer postMessage, which is how a
+    // pane is muted and unmuted without reloading it.
     return {
       kind: 'youtube',
       id,
-      src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&mute=1`,
+      src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&mute=1&enablejsapi=1`,
     }
   }
 

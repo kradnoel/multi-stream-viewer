@@ -1,99 +1,80 @@
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from 'vue'
 import type { ParsedStream } from '../lib/streams'
+import { hlsPlayer, twitchPlayer, youtubePlayer, type Player } from '../lib/players'
 
-const props = defineProps<{ stream: ParsedStream }>()
-const emit = defineEmits<{ close: [] }>()
+const props = defineProps<{
+  stream: ParsedStream
+  /** Whether this is the pane the user is listening to. Exactly one ever is. */
+  audible: boolean
+}>()
 
-const video = ref<HTMLVideoElement | null>(null)
+const emit = defineEmits<{ close: []; focus: [] }>()
+
 const error = ref<string | null>(null)
 
 /**
- * hls.js instance for the current manifest, if this pane is playing one.
- * Held so it can be torn down: each instance keeps network requests and buffers
- * running, so replacing a stream without destroying the old one leaks both.
+ * The pane's player, once its element exists.
+ *
+ * Held so focus changes can reach it and so it can be torn down: an hls.js
+ * instance keeps network requests and buffers running, so dropping a pane
+ * without destroying it leaks both.
  */
-let hls: { destroy: () => void } | null = null
+let player: Player | null = null
 
 const teardown = (): void => {
-  if (hls) {
-    hls.destroy()
-    hls = null
-  }
+  player?.destroy()
+  player = null
 }
 
-/**
- * Attaches a manifest to the <video> element.
- *
- * Safari plays HLS natively, so on macOS the manifest is set as the src
- * directly. WebView2 (Windows) and WebKitGTK (Linux) do not, and need hls.js
- * driving Media Source Extensions. The library is imported dynamically so the
- * 592KB chunk (187KB gzipped) only loads for panes that play a manifest.
- */
-const attachHls = async (src: string, element: HTMLVideoElement): Promise<void> => {
+const adopt = (next: Player): void => {
   teardown()
-  error.value = null
-
-  if (element.canPlayType('application/vnd.apple.mpegurl')) {
-    element.src = src
-    return
-  }
-
-  try {
-    const { default: Hls } = await import('hls.js')
-
-    if (!Hls.isSupported()) {
-      error.value = 'This webview cannot play HLS.'
-      return
-    }
-
-    const instance = new Hls({ enableWorker: true })
-    hls = instance
-
-    instance.on(Hls.Events.ERROR, (_event, data) => {
-      // Non-fatal errors are recovered by hls.js on its own; surfacing them
-      // would flicker a message during ordinary network hiccups.
-      if (data.fatal) {
-        error.value = `Playback failed: ${data.details}`
-      }
-    })
-
-    instance.loadSource(src)
-    instance.attachMedia(element)
-  } catch (cause) {
-    error.value = 'Could not load the HLS player.'
-    console.error('hls.js failed to load.', cause)
-  }
+  player = next
+  player.setMuted(!props.audible)
 }
 
-watch(
-  () => props.stream,
-  (stream) => {
-    if (stream.kind !== 'hls') {
-      teardown()
-      return
-    }
-    if (video.value) void attachHls(stream.src, video.value)
-  },
-  { immediate: true },
-)
-
-// The element does not exist until the template renders, so the first manifest
-// is attached from the ref callback rather than the watcher above.
+// The element does not exist until the template renders, so each player is
+// created from its ref callback rather than from a watcher.
 const onVideoMounted = (element: HTMLVideoElement | null): void => {
-  video.value = element
-  if (element && props.stream.kind === 'hls') void attachHls(props.stream.src, element)
+  if (!element || props.stream.kind !== 'hls') return
+  error.value = null
+  void hlsPlayer(element, props.stream.src, (message) => {
+    error.value = message
+  }).then(adopt)
 }
+
+const onFrameMounted = (element: HTMLIFrameElement | null): void => {
+  if (!element) return
+  adopt(props.stream.kind === 'twitch' ? twitchPlayer(element) : youtubePlayer(element))
+}
+
+// Muting is a message to a player that is already running, so moving the audio
+// never reloads a pane and never disturbs the one that had it.
+watch(
+  () => props.audible,
+  (audible) => player?.setMuted(!audible),
+)
 
 onBeforeUnmount(teardown)
 </script>
 
 <template>
-  <div class="pane">
+  <div class="pane" :class="{ 'pane-audible': audible }" @pointerdown="emit('focus')">
     <header class="pane-header">
+      <button
+        class="pane-audio"
+        type="button"
+        :aria-pressed="audible"
+        :title="audible ? 'Playing sound' : 'Listen to this stream'"
+        @click.stop="emit('focus')"
+      >
+        {{ audible ? '🔊' : '🔇' }}
+      </button>
       <span class="pane-kind">{{ stream.kind }}</span>
       <span class="pane-id">{{ stream.id }}</span>
-      <button class="pane-close" type="button" aria-label="Close pane" @click="emit('close')">×</button>
+      <button class="pane-close" type="button" aria-label="Close pane" @click.stop="emit('close')">
+        ×
+      </button>
     </header>
 
     <div class="pane-body">
@@ -101,6 +82,7 @@ onBeforeUnmount(teardown)
 
       <iframe
         v-else-if="stream.kind !== 'hls'"
+        :ref="(el) => onFrameMounted(el as HTMLIFrameElement | null)"
         :src="stream.src"
         class="pane-media"
         allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
@@ -130,14 +112,34 @@ onBeforeUnmount(teardown)
   overflow: hidden;
 }
 
+/* The audible pane is the one piece of state a glance has to find, so it is
+   marked on the pane itself rather than only on its button. */
+.pane-audible {
+  border-color: var(--p-primary-color);
+}
+
 .pane-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   padding: 6px 10px;
   background: var(--p-surface-0);
   border-bottom: 1px solid var(--p-surface-200);
   font-size: 12px;
+}
+
+.pane-audio {
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.pane-audible .pane-audio {
+  opacity: 1;
 }
 
 .pane-kind {
@@ -169,6 +171,7 @@ onBeforeUnmount(teardown)
 .pane-close:hover {
   color: var(--p-surface-900);
 }
+
 .pane-body {
   position: relative;
   flex: 1;

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Twitch pane</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+      }
+      #player,
+      #player iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      A pane's worth of Twitch, kept in its own document.
+
+      player.twitch.tv has no public postMessage API, so muting a channel means
+      running Twitch's embed script. This page is where it runs: the app talks
+      to it with one message and never loads the script itself.
+
+      The channel arrives as ?channel=, and the hostnames Twitch will accept as
+      the embedding page as a comma-separated ?parent=. Both come from the app,
+      which is the only window allowed to talk to this one.
+    -->
+    <div id="player"></div>
+    <script src="https://embed.twitch.tv/embed/v1.js"></script>
+    <script src="twitch.js"></script>
+  </body>
+</html>

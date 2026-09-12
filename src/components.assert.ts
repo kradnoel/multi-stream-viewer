@@ -21,12 +21,16 @@ type StreamPaneProps = InstanceType<typeof StreamPane>['$props']
 const stream: ParsedStream = { kind: 'hls', id: 'https://example.com/live.m3u8', src: 'https://example.com/live.m3u8' }
 
 /** `stream` is required. */
-// @ts-expect-error - missing the required prop
+// @ts-expect-error - missing the required props
 export const withoutStream: StreamPaneProps = {}
 
 /** And it is a ParsedStream, not the URL it was parsed from. */
 // @ts-expect-error - a string is not a ParsedStream
-export const withWrongStream: StreamPaneProps = { stream: stream.src }
+export const withWrongStream: StreamPaneProps = { stream: stream.src, audible: false }
 
-/** The shape the component actually takes. Fails if the prop is renamed. */
-export const withStream: StreamPaneProps = { stream }
+/** A pane always knows whether it is the audible one. */
+// @ts-expect-error - `audible` is required
+export const withoutAudible: StreamPaneProps = { stream }
+
+/** The shape the component actually takes. Fails if a prop is renamed. */
+export const withStream: StreamPaneProps = { stream, audible: true }
