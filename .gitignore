@@ -40,3 +40,6 @@ src-tauri/gen/schemas/
 
 # Carries the private registry token; never committed.
 .npmrc
+
+# A stray literal "~" directory, created when a download path was quoted wrong.
+~/
