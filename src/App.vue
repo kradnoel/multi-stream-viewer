@@ -8,6 +8,14 @@ const input = ref('')
 const streams = ref<ParsedStream[]>([])
 const error = ref<string | null>(null)
 
+/**
+ * The stream the user is listening to, or null for silence.
+ *
+ * One value rather than a flag per pane: the rule is that exactly one pane is
+ * audible, and a single source of truth cannot express two.
+ */
+const audible = ref<string | null>(null)
+
 const add = (): void => {
   const parsed = parseStreamUrl(input.value)
 
@@ -26,10 +34,18 @@ const add = (): void => {
   error.value = null
   streams.value.push(parsed)
   input.value = ''
+
+  // The first stream added is the one you came to hear; later ones join muted
+  // so they cannot talk over it.
+  if (audible.value === null) audible.value = parsed.src
 }
 
 const remove = (src: string): void => {
   streams.value = streams.value.filter((s) => s.src !== src)
+
+  // Closing the pane you were listening to leaves the app silent rather than
+  // moving the sound to one you did not choose.
+  if (audible.value === src) audible.value = null
 }
 
 /**
@@ -66,6 +82,8 @@ const columns = computed(() => Math.ceil(Math.sqrt(streams.value.length || 1)))
         v-for="stream in streams"
         :key="stream.src"
         :stream="stream"
+        :audible="stream.src === audible"
+        @focus="audible = stream.src"
         @close="remove(stream.src)"
       />
       <p v-if="streams.length === 0" class="empty">Paste a stream URL above to start watching.</p>

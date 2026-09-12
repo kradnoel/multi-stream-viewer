@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Twitch pane</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+      }
+      #player,
+      #player iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      A pane's worth of Twitch, kept in its own document.
+
+      player.twitch.tv has no public postMessage API, so muting a channel means
+      running Twitch's embed script. This page is where it runs: the app talks
+      to it with one message and never loads the script itself.
+
+      The channel arrives as ?channel=, and the hostnames Twitch will accept as
+      the embedding page as a comma-separated ?parent=. Both come from the app,
+      which is the only window allowed to talk to this one.
+    -->
+    <div id="player"></div>
+    <script src="https://embed.twitch.tv/embed/v1.js"></script>
+    <script>
+      const params = new URLSearchParams(location.search)
+      const channel = params.get('channel')
+      const parent = (params.get('parent') || '').split(',').filter(Boolean)
+
+      let player = null
+      // Held until the player exists, so a mute that arrives during load is
+      // applied rather than dropped. Panes are created muted and a focused one
+      // is unmuted immediately, which is exactly that race.
+      let pendingMuted = true
+
+      const embed = new Twitch.Embed('player', {
+        channel,
+        parent,
+        width: '100%',
+        height: '100%',
+        layout: 'video',
+        autoplay: true,
+        muted: true,
+      })
+
+      embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+        player = embed.getPlayer()
+        player.setMuted(pendingMuted)
+        window.parent.postMessage({ source: 'msv-twitch', type: 'ready' }, '*')
+      })
+
+      window.addEventListener('message', (event) => {
+        // Only the app embeds this page, so anything from elsewhere is not for us.
+        if (event.source !== window.parent) return
+
+        const message = event.data
+        if (!message || message.source !== 'msv' || message.type !== 'set-muted') return
+
+        pendingMuted = Boolean(message.muted)
+        if (player) player.setMuted(pendingMuted)
+      })
+    </script>
+  </body>
+</html>
