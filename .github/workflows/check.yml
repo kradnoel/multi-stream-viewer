@@ -62,6 +62,9 @@ jobs:
       - name: Typecheck
         run: node scripts/typecheck.mjs
 
+      - name: Test
+        run: bun test
+
       - name: Build frontend
         run: bun run build
 
