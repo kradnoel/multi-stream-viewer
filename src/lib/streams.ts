@@ -21,10 +21,17 @@ export interface ParsedStream {
  *
  * Twitch rejects an embed whose `parent` does not match the page's hostname, and
  * that hostname differs per platform: Tauri serves the app from
- * `http://tauri.localhost` on Windows and `tauri://localhost` elsewhere, while
- * `bun tauri dev` serves it from `http://localhost:3000`. The live hostname is
- * sent first and the known Tauri hosts follow, so a build on any platform has a
+ * `tauri.localhost` on Windows and `tauri://localhost` elsewhere, while
+ * `bun tauri dev` serves it from `localhost:3000`. The live hostname is sent
+ * first and the known Tauri hosts follow, so a build on any platform has a
  * matching parent without hardcoding one.
+ *
+ * The scheme matters as much as the host. Twitch answers a `parent` with a
+ * `frame-ancestors` policy, and for anything but `localhost` it permits https
+ * only — `parent=tauri.localhost` yields `https://tauri.localhost`, while
+ * `localhost` also gets `http://localhost:*`. Windows serves the app over http
+ * unless told otherwise, which no `parent` value can rescue, so the window sets
+ * `useHttpsScheme` and this list stays as it is.
  */
 function twitchParents(): string[] {
   const hosts = new Set<string>()
