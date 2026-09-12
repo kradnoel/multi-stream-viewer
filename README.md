@@ -18,7 +18,8 @@ because a browser blocks autoplay that is not.
 - [Bun](https://bun.sh) 1.4 or newer
 - A Rust toolchain (`rustup`), 1.75 or newer
 - Node 22 or newer, for the type check only — `vue-tsc` does not register `.vue`
-  files when run under Bun
+  files when run under Bun, so the `typecheck` script invokes Node by name and
+  fails without it
 - Platform dependencies for Tauri 2: see
   [tauri.app/start/prerequisites](https://tauri.app/start/prerequisites/)
 
@@ -49,10 +50,20 @@ bun tauri dev
 ## Checks
 
 ```sh
-bun run typecheck   # vue-tsc; run under Node for real component checking
-bun run build       # Vite; must run before cargo check
+node scripts/typecheck.mjs   # vue-tsc, under Node
+bun run build                # Vite; must run before cargo check
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
+
+The type check is invoked with `node` rather than through `bun run`, and the
+script refuses to run under anything else. `bun run` shims `node` with Bun, and
+under Bun `vue-tsc` silently drops every `.vue` file from the program — so the
+check would pass having inspected none of the components.
+
+`src/components.assert.ts` guards the same thing from the other side: it states
+mistakes the compiler must catch, so if the components ever become `any` again
+the unused `@ts-expect-error` directives turn the check red. A guard nobody has
+seen fail is not known to work.
 
 `generate_context!` reads `frontendDist`, so `bun run build` has to come first
 or the Rust check panics.

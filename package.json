@@ -9,7 +9,7 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "typecheck": "vue-tsc --noEmit",
+        "typecheck": "node scripts/typecheck.mjs",
         "tauri": "tauri",
         "tauri:dev": "bun tauri dev",
         "tauri:build": "bun tauri build"

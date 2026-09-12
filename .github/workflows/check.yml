@@ -23,7 +23,9 @@ jobs:
           bun-version: latest
 
       # vue-tsc's Volar layer does not register .vue under Bun, so the type
-      # check runs under Node. Bun stays the package manager and app runtime.
+      # check runs under Node — the `typecheck` script names the runtime itself
+      # rather than trusting whatever resolves `vue-tsc` here. Bun stays the
+      # package manager and the app runtime.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -58,7 +60,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Typecheck
-        run: bun run typecheck
+        run: node scripts/typecheck.mjs
 
       - name: Build frontend
         run: bun run build
