@@ -1,6 +1,6 @@
 [package]
 name = "multi-stream-viewer"
-version = "0.2.0"
+version = "0.4.0"
 description = "Multi-platform desktop app for watching multiple live streams simultaneously."
 license = "MIT"
 edition = "2021"
