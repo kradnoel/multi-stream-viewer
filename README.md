@@ -4,10 +4,11 @@ A desktop app for watching several live streams at once: paste in a Twitch,
 YouTube Live or direct HLS URL, arrange the panes, hear the one you want, and
 reopen the same set tomorrow.
 
-**Status: several panes play.** The window, tray and exit dialog work, and any
-number of Twitch channels, YouTube videos or direct `.m3u8` URLs can be pasted
-in; the grid arranges them squarest-first. Panes start muted and nothing yet
-keeps exactly one of them audible, and nothing is saved between runs.
+**Status: several panes play, and you hear one of them.** The window, tray and
+exit dialog work; any number of Twitch channels, YouTube videos or direct
+`.m3u8` URLs can be pasted in, and the grid arranges them squarest-first.
+Clicking a pane makes it the only audible one. A set of streams can be named and
+reopened later. There is no chat yet, and no rearranging panes by hand.
 
 It is not a recorder, clipper or restreamer, not a browser, not mobile, and not
 a moderation tool. Chat, when it arrives, will be read-only.
